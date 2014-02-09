@@ -4,7 +4,7 @@ jawbone_sleep_analyzer
 Exract and display sleep data from Jawbone API.
 
 # Example of output
-Each line represents a 24h interval starting at 17h00, each dot represents a 15 min interval. For clarity purposes, 
+Each line represents a 24h interval starting at 17h00, each '.' (awake) or 'x' (asleep) represents a 15 min interval. For clarity purposes, 
 a white space has been introduced at midnight and noon.
 
 ```
