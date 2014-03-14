@@ -3,7 +3,9 @@ Usage example:
 
     jawbone = JawboneSleepAnalyzer()
     token = jawbone.login()
-    sleep_data = jawbone.get_sleep_data(token)
+    sleep_data = jawbone.get_sleep_data(token,
+                                        start_time=int(time.time()) - 20*DAY,
+                                        end_time=DEFAULT_END_TIME)
     jawbone.display_sleep_data(sleep_data)
 """
 
@@ -24,7 +26,11 @@ HIGH_STEPS_SCORE = 20000
 MEDIUM_STEPS_SCORE = 10000
 LOW_STEPS_SCORE = 2000
 
-WEEK = 7*24*60*60
+DAY = 24*60*60
+WEEK = 7*DAY
+
+DEFAULT_START_TIME = int(time.time()) - WEEK
+DEFAULT_END_TIME = int(time.time())
 
 
 class JawboneSleepAnalyzer():
@@ -109,13 +115,11 @@ class JawboneSleepAnalyzer():
         Throws:
             Exception if an error occured while making the sleep GET request.
         """
-        now = int(time.time())
         params = {}
-        params['start_time'] = start_time if start_time else now-WEEK
-        params['end_time'] = end_time if end_time else now
+        params['start_time'] = start_time if start_time else DEFAULT_START_TIME
+        params['end_time'] = end_time if end_time else DEFAULT_END_TIME
         url = SLEEP_DATA_URL + "/?" + urllib.urlencode(params)
-
-        return self._request(token, url)
+        return self._paginated_request(url)
 
     def display_sleep_data(self, data):
         """ Display sleep data from Jawbone API.
@@ -130,7 +134,7 @@ class JawboneSleepAnalyzer():
         a white space has been introduced at midnight and noon.
         """
         sleep_data = []
-        for item in data["data"]["items"]:
+        for item in data:
             details = item["details"]
             asleep_dt = datetime.fromtimestamp(details["asleep_time"])
             awake_dt = datetime.fromtimestamp(details["awake_time"])
@@ -282,6 +286,20 @@ class JawboneSleepAnalyzer():
             else:
                 line += " "
         print line
+
+    def _paginated_request(self, url):
+        """Perform multiple API requests in order to fetch all data."""
+        data = []
+
+        the_end = False
+        while not the_end:
+            response = self._request(token, url)
+            data.extend(response["data"]["items"])
+            if response["data"].get("links", {}).get("next"):
+                url = "https://jawbone.com" + response["data"]["links"]["next"]
+            else:
+                the_end = True
+        return data
 
     def _request(self, token, url):
         opener = urllib2.build_opener()
