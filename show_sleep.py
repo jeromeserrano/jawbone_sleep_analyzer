@@ -7,12 +7,12 @@ Usage example:
     jawbone.display_sleep_data(sleep_data)
 """
 
-
-import urllib
-import urllib2
-import json
 from datetime import date, datetime, timedelta
 from dateutil.rrule import rrule, DAILY
+import json
+import time
+import urllib
+import urllib2
 
 USERNAME = ''
 PASSWORD = ''
@@ -23,6 +23,8 @@ MOVES_DATA_URL = 'https://jawbone.com/nudge/api/v.1.33/users/@me/moves'
 HIGH_STEPS_SCORE = 20000
 MEDIUM_STEPS_SCORE = 10000
 LOW_STEPS_SCORE = 2000
+
+WEEK = 7*24*60*60
 
 
 class JawboneSleepAnalyzer():
@@ -49,7 +51,7 @@ class JawboneSleepAnalyzer():
 
         return data.get("token")
 
-    def get_sleep_data(self, token):
+    def get_sleep_data(self, token, start_time=None, end_time=None):
         """ Perform GET request to obtain sleep data.
 
         Returns:
@@ -107,7 +109,13 @@ class JawboneSleepAnalyzer():
         Throws:
             Exception if an error occured while making the sleep GET request.
         """
-        return self._request(token, SLEEP_DATA_URL)
+        now = int(time.time())
+        params = {}
+        params['start_time'] = start_time if start_time else now-WEEK
+        params['end_time'] = end_time if end_time else now
+        url = SLEEP_DATA_URL + "/?" + urllib.urlencode(params)
+
+        return self._request(token, url)
 
     def display_sleep_data(self, data):
         """ Display sleep data from Jawbone API.
@@ -127,6 +135,9 @@ class JawboneSleepAnalyzer():
             asleep_dt = datetime.fromtimestamp(details["asleep_time"])
             awake_dt = datetime.fromtimestamp(details["awake_time"])
             sleep_data.append([asleep_dt, awake_dt])
+
+        # Reverse the sleep_data list in order to keep an achronological order.
+        sleep_data = sleep_data[::-1]
 
         start = sleep_data[len(sleep_data) - 1][1].replace(hour=17, minute=0, second=0)
         start -= timedelta(days=1)
