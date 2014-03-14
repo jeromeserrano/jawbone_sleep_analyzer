@@ -57,7 +57,7 @@ class JawboneSleepAnalyzer():
 
         return data.get("token")
 
-    def get_sleep_data(self, token, start_time=None, end_time=None):
+    def get_sleep_data(self, token, start_time=DEFAULT_START_TIME, end_time=DEFAULT_END_TIME):
         """ Perform GET request to obtain sleep data.
 
         Returns:
@@ -115,9 +115,10 @@ class JawboneSleepAnalyzer():
         Throws:
             Exception if an error occured while making the sleep GET request.
         """
-        params = {}
-        params['start_time'] = start_time if start_time else DEFAULT_START_TIME
-        params['end_time'] = end_time if end_time else DEFAULT_END_TIME
+        params = {
+            'start_time': start_time,
+            'end_time': end_time
+        }
         url = SLEEP_DATA_URL + "/?" + urllib.urlencode(params)
         return self._paginated_request(url)
 
@@ -172,7 +173,7 @@ class JawboneSleepAnalyzer():
             if (d.weekday() == 6):
                 print ""
 
-    def get_moves_data(self, token):
+    def get_moves_data(self, token, start_time=DEFAULT_START_TIME, end_time=DEFAULT_END_TIME):
         """ Perform GET request to obtain moves data.
 
         Returns:
@@ -262,11 +263,16 @@ class JawboneSleepAnalyzer():
         Throws:
             Exception if an error occured while making the sleep GET request.
         """
-        return self._request(token, MOVES_DATA_URL)
+        params = {
+            'start_time': start_time,
+            'end_time': end_time
+        }
+        url = MOVES_DATA_URL + "/?" + urllib.urlencode(params)
+        return self._paginated_request(url)
 
     def display_moves_data(self, data):
-        from_date = min([item['time_completed'] for item in data["data"]["items"]])
-        to_date = max([item['time_completed'] for item in data["data"]["items"]])
+        from_date = min([item['time_completed'] for item in data])
+        to_date = max([item['time_completed'] for item in data])
 
         print ("%s -> %s" %
                (datetime.fromtimestamp(from_date).strftime('%Y-%m-%d'),
@@ -275,7 +281,7 @@ class JawboneSleepAnalyzer():
         moves_data = []
         line = ""
 
-        for item in data["data"]["items"]:
+        for item in data:
             steps = item["details"]["steps"]
             if steps > HIGH_STEPS_SCORE:
                 line += "|"
